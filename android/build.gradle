@@ -96,6 +96,8 @@ dependencies {
     implementation 'com.mapbox.navigation:core:1.5.0'
     implementation 'com.mapbox.navigation:ui:1.5.0'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-services:2.2.+'
+    implementation 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.+'
 }
 
 def configureReactNativePom(def pom) {

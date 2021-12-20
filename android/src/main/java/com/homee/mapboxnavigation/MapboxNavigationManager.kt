@@ -7,6 +7,7 @@ import com.facebook.react.common.MapBuilder
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.annotations.ReactProp
+import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.geojson.Point
 import com.mapbox.mapboxsdk.Mapbox
 import javax.annotation.Nonnull
@@ -24,6 +25,8 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
             }
         }
     }
+
+
 
     override fun getName(): String {
         return "MapboxNavigation"
@@ -46,6 +49,16 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
                 "onArrive", MapBuilder.of("registrationName", "onArrive"),
                 "onRouteProgressChange", MapBuilder.of("registrationName", "onRouteProgressChange"),
         )
+    }
+
+    @ReactProp(name = "routes")
+    fun setRoutes(view: MapboxNavigationView, routes: String?) {
+        if (routes != null) {
+            var routesFixed:String = routes
+            var route: DirectionsRoute =  DirectionsRoute.fromJson(routesFixed)
+            var directions:List<DirectionsRoute> = listOf(route)
+            view.setRoutes(directions)
+        }
     }
 
     @ReactProp(name = "origin")

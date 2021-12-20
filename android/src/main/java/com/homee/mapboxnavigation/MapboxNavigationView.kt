@@ -28,6 +28,7 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
     private var origin: Point? = null
     private var destination: Point? = null
     private var shouldSimulateRoute = false
+    private var routes: List<DirectionsRoute>? = null
     private var showsEndOfRouteFeedback = false
     private var mute = false
     private lateinit var navigationMapboxMap: NavigationMapboxMap
@@ -87,41 +88,39 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
             //this.retrieveMapboxNavigation()?.let { this.mapboxNavigation = it } // this does not work
 
             // fetch the route
-            val navigationOptions = MapboxNavigation
+            val routes = this.routes
+            if (routes != null) {
+                val navigationOptions = MapboxNavigation
                     .defaultNavigationOptionsBuilder(context, accessToken)
                     .isFromNavigationUi(true)
                     .build()
-            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
-                    .applyDefaultParams()
-                    .accessToken(accessToken)
-                    .coordinates(mutableListOf(origin, destination))
-                    .profile(RouteUrl.PROFILE_DRIVING)
-                    .steps(true)
-                    .voiceInstructions(!this.mute)
-                    .build(), routesReqCallback)
+                this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
+                startNav(routes[0])
+            } else {
+                throw Exception("Route not accepted")
+            }
+//            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
+//            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
+//                    .applyDefaultParams()
+//                    .accessToken(accessToken)
+//                    .coordinates(mutableListOf(origin, destination))
+//                    .profile(RouteUrl.PROFILE_DRIVING)
+//                    .steps(true)
+//                    .voiceInstructions(!this.mute)
+//                    .build(), routesReqCallback)
         } catch (ex: Exception) {
             sendErrorToReact(ex.toString())
-        }
-    }
-
-    private val routesReqCallback = object : RoutesRequestCallback {
-        override fun onRoutesReady(routes: List<DirectionsRoute>) {
-            if (routes.isEmpty()) {
-                sendErrorToReact("No route found")
-                return;
+//        }
+//    }
+//
+//    private val routesReqCallback = object : RoutesRequestCallback {
+//        override fun onRoutesReady(routes: List<DirectionsRoute>) {
+//            if (routes.isEmpty()) {
+//                sendErrorToReact("No route found")
+//                return;
+            for (it in ex.getStackTrace()) {
+                sendErrorToReact(it.toString())
             }
-
-            startNav(routes[0])
-        }
-
-        override fun onRoutesRequestFailure(throwable: Throwable, routeOptions: RouteOptions) {
-
-
-        }
-
-        override fun onRoutesRequestCanceled(routeOptions: RouteOptions) {
-
         }
     }
 
@@ -209,6 +208,10 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
     fun setDestination(destination: Point?) {
         this.destination = destination
+    }
+
+    fun setRoutes(routes: List<DirectionsRoute>?) {
+        this.routes = routes
     }
 
     fun setShouldSimulateRoute(shouldSimulateRoute: Boolean) {
