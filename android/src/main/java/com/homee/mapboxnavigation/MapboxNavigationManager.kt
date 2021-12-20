@@ -53,6 +53,7 @@ class MapboxNavigationManager(var mCallerContext: ReactApplicationContext) : Sim
 
     @ReactProp(name = "routes")
     fun setRoutes(view: MapboxNavigationView, routes: String?) {
+        print(routes)
         if (routes != null) {
             var routesFixed:String = routes
             var route: DirectionsRoute =  DirectionsRoute.fromJson(routesFixed)
