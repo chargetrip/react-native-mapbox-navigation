@@ -69,8 +69,8 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                 return
             }
 
-            if (origin == null || destination == null) {
-                sendErrorToReact("origin and destination are required")
+            if (routes == null) {
+                sendErrorToReact("routes is required")
                 return
             }
 
