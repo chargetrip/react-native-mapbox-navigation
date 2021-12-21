@@ -69,10 +69,10 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                 return
             }
 
-            // if (origin == null || destination == null) {
-            //     sendErrorToReact("origin and destination are required")
-            //     return
-            // }
+            if (routes == null) {
+                sendErrorToReact("routes is required")
+                return
+            }
 
             if (::navigationMapboxMap.isInitialized) {
                 return
@@ -89,16 +89,13 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
             // fetch the route
             val routes = this.routes
-            if (routes != null) {
-                val navigationOptions = MapboxNavigation
-                    .defaultNavigationOptionsBuilder(context, accessToken)
-                    .isFromNavigationUi(true)
-                    .build()
-                this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-                startNav(routes[0])
-            } else {
-                throw Exception("Route not accepted")
-            }
+            val navigationOptions = MapboxNavigation
+                .defaultNavigationOptionsBuilder(context, accessToken)
+                .isFromNavigationUi(true)
+                .build()
+            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
+            startNav(routes[0])
+            
 //            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
 //            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
 //                    .applyDefaultParams()
