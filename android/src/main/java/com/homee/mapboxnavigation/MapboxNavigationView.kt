@@ -89,13 +89,16 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
             // fetch the route
             val routes = this.routes
-            val navigationOptions = MapboxNavigation
-                .defaultNavigationOptionsBuilder(context, accessToken)
-                .isFromNavigationUi(true)
-                .build()
-            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-            startNav(routes[0])
-            
+            if (routes != null) {
+                val navigationOptions = MapboxNavigation
+                    .defaultNavigationOptionsBuilder(context, accessToken)
+                    .isFromNavigationUi(true)
+                    .build()
+                this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
+                startNav(routes[0])
+            } else {
+                throw Exception("Route not accepted")
+            }
 //            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
 //            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
 //                    .applyDefaultParams()
