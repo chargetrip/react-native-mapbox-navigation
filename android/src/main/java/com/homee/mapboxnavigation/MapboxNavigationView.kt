@@ -28,7 +28,7 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
     private var origin: Point? = null
     private var destination: Point? = null
     private var shouldSimulateRoute = false
-    private var routes: List<DirectionsRoute>? = null
+    private var route: DirectionsRoute? = null
     private var showsEndOfRouteFeedback = false
     private var mute = false
     private lateinit var navigationMapboxMap: NavigationMapboxMap
@@ -88,14 +88,13 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
             //this.retrieveMapboxNavigation()?.let { this.mapboxNavigation = it } // this does not work
 
             // fetch the route
-            val routes = this.routes
-            if (routes != null) {
+            if (this.route != null) {
                 val navigationOptions = MapboxNavigation
                     .defaultNavigationOptionsBuilder(context, accessToken)
                     .isFromNavigationUi(true)
                     .build()
                 this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-                startNav(routes[0])
+                startNav(this.route)
             } else {
                 throw Exception("Route not accepted")
             }
@@ -210,8 +209,8 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
         this.destination = destination
     }
 
-    fun setRoutes(routes: List<DirectionsRoute>?) {
-        this.routes = routes
+    fun setRoutes(route: DirectionsRoute?) {
+        this.route = route
     }
 
     fun setShouldSimulateRoute(shouldSimulateRoute: Boolean) {
