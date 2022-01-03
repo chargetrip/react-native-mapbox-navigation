@@ -69,8 +69,8 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                 return
             }
 
-            if (routes == null) {
-                sendErrorToReact("routes is required")
+            if (route == null) {
+                sendErrorToReact("route is required")
                 return
             }
 
@@ -85,8 +85,6 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
             this.navigationMapboxMap = this.retrieveNavigationMapboxMap()!!
 
-            //this.retrieveMapboxNavigation()?.let { this.mapboxNavigation = it } // this does not work
-
             // fetch the route
             if (this.route != null) {
                 val navigationOptions = MapboxNavigation
@@ -94,29 +92,16 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
                     .isFromNavigationUi(true)
                     .build()
                 this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-                startNav(this.route)
+
+                // Disable dynamic rerouting
+                mapboxNavigation.setRerouteController(null);
+                startNav(route)
             } else {
                 throw Exception("Route not accepted")
             }
-//            this.mapboxNavigation = MapboxNavigationProvider.create(navigationOptions)
-//            this.mapboxNavigation.requestRoutes(RouteOptions.builder()
-//                    .applyDefaultParams()
-//                    .accessToken(accessToken)
-//                    .coordinates(mutableListOf(origin, destination))
-//                    .profile(RouteUrl.PROFILE_DRIVING)
-//                    .steps(true)
-//                    .voiceInstructions(!this.mute)
-//                    .build(), routesReqCallback)
         } catch (ex: Exception) {
             sendErrorToReact(ex.toString())
-//        }
-//    }
-//
-//    private val routesReqCallback = object : RoutesRequestCallback {
-//        override fun onRoutesReady(routes: List<DirectionsRoute>) {
-//            if (routes.isEmpty()) {
-//                sendErrorToReact("No route found")
-//                return;
+
             for (it in ex.getStackTrace()) {
                 sendErrorToReact(it.toString())
             }
