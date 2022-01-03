@@ -95,7 +95,7 @@ class MapboxNavigationView(private val context: ThemedReactContext) : Navigation
 
                 // Disable dynamic rerouting
                 mapboxNavigation.setRerouteController(null);
-                startNav(this.route)
+                startNav(route!!)
             } else {
                 throw Exception("Route not accepted")
             }
