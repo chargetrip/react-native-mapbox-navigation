@@ -28,6 +28,7 @@ type OnErrorEvent = {
 export interface IMapboxNavigationProps {
   origin?: Coordinate;
   destination?: Coordinate;
+  waypoints: any;
   route: string;
   shouldSimulateRoute?: boolean;
   onLocationChange?: (event: OnLocationChangeEvent) => void;
