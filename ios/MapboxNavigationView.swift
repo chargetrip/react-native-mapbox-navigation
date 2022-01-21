@@ -267,19 +267,7 @@ class MapboxNavigationView: UIView {
             
             let result = try decoder.decode(Route.self, from: jsonData)
             
-            let shape = result.shape
-            let encodedPolyline = Polyline(coordinates: shape!.coordinates).encodedPolyline
-            let polyline = Polyline(encodedPolyline: encodedPolyline, precision: 1e6)
-            
-            let correctedPrecisionRoute = Route(
-                legs: result.legs,
-                shape: LineString(polyline.coordinates!),
-                distance: result.distance,
-                expectedTravelTime: result.expectedTravelTime,
-                typicalTravelTime: result.typicalTravelTime
-            )
-            
-            return correctedPrecisionRoute
+            return result
         } catch let error {
             print(error)
             self.onError!(["message": error.localizedDescription])
@@ -301,6 +289,7 @@ class MapboxNavigationView: UIView {
         let routeOptions = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
         let navigationService = MapboxNavigationService(route: mappedRoute, routeIndex: 0, routeOptions: routeOptions, simulating: shouldSimulateRoute ? .always : .never)
         navigationService.router.reroutesProactively = false
+        navigationService.router.refreshesRoute = false
 
         let navigationOptions = NavigationOptions(navigationService: navigationService)
         let navigationViewController = NavigationViewController(for: mappedRoute, routeIndex: 0, routeOptions: routeOptions, navigationOptions: navigationOptions)
