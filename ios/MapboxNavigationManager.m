@@ -15,5 +15,6 @@ RCT_EXPORT_VIEW_PROPERTY(route, NSString)
 RCT_EXPORT_VIEW_PROPERTY(origin, NSArray)
 RCT_EXPORT_VIEW_PROPERTY(destination, NSArray)
 RCT_EXPORT_VIEW_PROPERTY(waypoints, NSDictionaryArray)
+RCT_EXPORT_VIEW_PROPERTY(onReroute, RCTDirectEventBlock)
 
 @end

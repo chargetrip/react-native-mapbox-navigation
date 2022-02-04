@@ -63,9 +63,16 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
     }
     
     func navigationViewController(_ navigationViewController: NavigationViewController, shouldRerouteFrom location: CLLocation) -> Bool {
-    print("Wants reroute")
+
+    onLocationChange?(["longitude": location.coordinate.longitude, "latitude": location.coordinate.latitude])
+        onReroute?(["coordinate": [location.coordinate.longitude, location.coordinate.latitude],
+                    "speed": location.speed,
+                    "altitude": location.altitude,
+                    "course": location.course,
+        ])
+      
             
-    return false
+    return true
     }
      
     func navigationViewController(_ navigationViewController: NavigationViewController, didUpdate progress: RouteProgress, with location: CLLocation, rawLocation: CLLocation) {
@@ -221,6 +228,7 @@ class MapboxNavigationView: UIView {
     @objc var waypoints: [NSDictionary] = [] {
       didSet { setNeedsLayout() }
     }
+    @objc var onReroute: RCTDirectEventBlock?
 
     override init(frame: CGRect) {
         super.init(frame: frame)

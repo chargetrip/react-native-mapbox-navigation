@@ -39,4 +39,5 @@ export interface IMapboxNavigationProps {
   showsEndOfRouteFeedback?: boolean;
   hideStatusView?: boolean;
   mute?: boolean;
+  onReroute?: (event: any) => void;
 }
