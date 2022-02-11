@@ -45,6 +45,37 @@ struct WaypointCT: Codable {
 
 
 extension MapboxNavigationView: NavigationViewControllerDelegate {
+    
+    func navigationViewController(_ navigationViewController: NavigationViewController, didArriveAt waypoint: Waypoint) -> Bool {
+        let isFinalLeg = navigationViewController.navigationService.routeProgress.isFinalLeg
+        
+        do {
+
+            let encoder = JSONEncoder()
+            let waypointData = try encoder.encode(waypoint)
+            let waypointString = String(data: waypointData, encoding: .utf8)
+            
+            onArrive?([
+                "waypoint": waypointString,
+                "isFinalLeg": isFinalLeg,
+                "index": navigationViewController.navigationService.routeProgress.legIndex
+            ])
+            
+            if !isFinalLeg {
+                print("Advance legs!")
+                navigationViewController.navigationService.router.advanceLegIndex()
+                navigationViewController.navigationService.start()
+                print("Should have started..")
+            }
+            
+        } catch {
+            print("Error onDidArive : \(error)")
+        }
+        
+     return isFinalLeg
+    }
+
+    
     func navigationViewControllerDidDismiss(_ navigationViewController: NavigationViewController, byCanceling canceled: Bool) {
       if (!canceled) {
         return;
@@ -52,10 +83,7 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
       onCancelNavigation?(["message": ""]);
     }
     
-    func navigationViewController(_ navigationViewController: NavigationViewController, didArriveAt waypoint: Waypoint) -> Bool {
-      onArrive?(["message": ""]);
-      return true;
-    }
+
     
     func navigationService(_ navigationViewController: NavigationViewController, willRerouteFrom location: CLLocation) {
         print("Will reroute")
@@ -63,15 +91,14 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
     }
     
     func navigationViewController(_ navigationViewController: NavigationViewController, shouldRerouteFrom location: CLLocation) -> Bool {
-
-    onLocationChange?(["longitude": location.coordinate.longitude, "latitude": location.coordinate.latitude])
+        print("Will trigger onReroute")
         onReroute?(["coordinate": [location.coordinate.longitude, location.coordinate.latitude],
                     "speed": location.speed,
                     "altitude": location.altitude,
                     "course": location.course,
+                    "legIndex": navigationViewController.navigationService.routeProgress.legIndex
         ])
       
-            
     return true
     }
      
@@ -82,6 +109,19 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
                               "fractionTraveled": progress.fractionTraveled,
                               "distanceRemaining": progress.distanceRemaining])
     }
+    
+    // func navigationMapView(_ mapView: NavigationMapView, shapeFor waypoints: [Waypoint]) -> MGLShape? {
+    //     var pointFeatures: [MGLPointFeature] = []
+        
+    //     for waypoint in waypoints {
+    //         let point = MGLPointFeature()
+    //         point.attributes = ["title" : waypoint.name!]
+    //         pointFeatures.append(point)
+    //     }
+        
+    //     let shapeCollection = MGLShapeCollectionFeature(shapes: pointFeatures)
+    //     return shapeCollection
+    // }
     
     func navigationViewController(_ navigationViewController: NavigationViewController, waypointSymbolStyleLayerWithIdentifier identifier: String, source: MGLSource) -> MGLStyleLayer? {
         let styleLayer = MGLSymbolStyleLayer(identifier: identifier, source: source)
@@ -94,13 +134,37 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
         return styleLayer
     }
     
+    func getWaypointOptions() -> [Waypoint] {
+        let originCoordinate = CLLocationCoordinate2D(latitude: origin[1] as! Double, longitude: origin[0] as! Double)
+        let destinationCoordinate = CLLocationCoordinate2D(latitude: destination[1] as! Double, longitude: destination[0] as! Double)
+    
+        var mappedWaypoints: [Waypoint] = [ Waypoint(coordinate: originCoordinate) ]
+        
+        waypoints.forEach { dictionary in
+            guard let dict = dictionary as? [String: Any] else { return }
+ 
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: dict, options: .prettyPrinted)
+                let data = try JSONDecoder().decode(WaypointCT.self, from: jsonData)
+                let coordinate = CLLocationCoordinate2D(latitude: data.geometry.latitude, longitude: data.geometry.longitude)
+                
+                mappedWaypoints.append(Waypoint(coordinate: coordinate))
+                
+            } catch {
+                print(error)
+            }
+        }
+        
+        mappedWaypoints.append(Waypoint(coordinate: destinationCoordinate)) // Add destination
+
+        return mappedWaypoints
+    }
     
     func drawIcons() {
         if let style = self.navViewController?.mapView?.style {
             var stationFeatures: [MGLPointFeature] = []
             var finalFeatures: [MGLPointFeature] = []
             var viaFeatures: [MGLPointFeature] = []
-
 
             waypoints.forEach { dictionary in
                 guard let dict = dictionary as? [String: Any] else { return }
@@ -114,6 +178,11 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
                     newFeature.attributes = [:]
                     
                     switch(data.type) {
+                        case "stationVia":
+                        newFeature.attributes = [
+                            "text": data.properties.text!
+                        ]
+                            stationFeatures.append(newFeature)
                         case "station":
                         newFeature.attributes = [
                             "text": data.properties.text!
@@ -124,8 +193,6 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
                                 "text": data.properties.text!
                             ]
                             viaFeatures.append(newFeature)
-                        case "final":
-                            finalFeatures.append(newFeature)
                     default:
                         return
                     }
@@ -159,25 +226,6 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
                 }
             }
             
-            if !finalFeatures.isEmpty {
-                style.setImage(UIImage(named: "destination")!, forName: "finalIcon")
-                
-                if let iconSource = style.source(withIdentifier: "finalSource") as? MGLShapeSource {
-                    let collection = MGLShapeCollectionFeature(shapes: finalFeatures)
-                    iconSource.shape = collection
-                } else {
-                    let iconSource = MGLShapeSource(identifier: "finalSource", features: finalFeatures, options: nil)
-                    let symbols = MGLSymbolStyleLayer(identifier: "finalLayer", source: iconSource)
-                    symbols.iconAllowsOverlap = NSExpression(forConstantValue: true)
-                    symbols.textAllowsOverlap = NSExpression(forConstantValue: true)
-                    symbols.iconImageName = NSExpression(forConstantValue: "finalIcon")
-                    symbols.iconOffset = NSExpression(forConstantValue: NSValue(cgVector: CGVector(dx: 0, dy: -20)))
-                    
-                    style.addSource(iconSource)
-                    style.addLayer(symbols)
-                }
-            }
-            
             if !viaFeatures.isEmpty {
                 style.setImage(UIImage(named: "via")!, forName: "viaIcon")
                 
@@ -199,6 +247,28 @@ extension MapboxNavigationView: NavigationViewControllerDelegate {
                     style.addSource(iconSource)
                     style.addLayer(symbols)
                 }
+            }
+            
+            let finalFeature = MGLPointFeature()
+            finalFeature.coordinate = CLLocationCoordinate2D(latitude: destination[1] as! Double, longitude: destination[0] as! Double)
+            finalFeature.attributes = [:]
+            finalFeatures.append(finalFeature)
+            
+            style.setImage(UIImage(named: "destination")!, forName: "finalIcon")
+            
+            if let iconSource = style.source(withIdentifier: "finalSource") as? MGLShapeSource {
+                let collection = MGLShapeCollectionFeature(shapes: finalFeatures)
+                iconSource.shape = collection
+            } else {
+                let iconSource = MGLShapeSource(identifier: "finalSource", features: finalFeatures, options: nil)
+                let symbols = MGLSymbolStyleLayer(identifier: "finalLayer", source: iconSource)
+                symbols.iconAllowsOverlap = NSExpression(forConstantValue: true)
+                symbols.textAllowsOverlap = NSExpression(forConstantValue: true)
+                symbols.iconImageName = NSExpression(forConstantValue: "finalIcon")
+                symbols.iconOffset = NSExpression(forConstantValue: NSValue(cgVector: CGVector(dx: 0, dy: -20)))
+                
+                style.addSource(iconSource)
+                style.addLayer(symbols)
             }
             
         }
@@ -257,16 +327,13 @@ class MapboxNavigationView: UIView {
     private func getMappedRoute() -> Route? {
         let stringSwift = route as String
         let jsonData = Data(stringSwift.utf8)
-        let coordinates = [
-            CLLocationCoordinate2D.init(latitude: 0, longitude: 0),
-            CLLocationCoordinate2D.init(latitude: 0, longitude: 0)
-        ]
+        let waypointOptions = getWaypointOptions()
         
         do {
             // Prepare decoder
             let decoder = JSONDecoder()
             decoder.userInfo = [
-                .options: RouteOptions(coordinates: coordinates, profileIdentifier: .automobile),
+                .options: RouteOptions(waypoints: waypointOptions, profileIdentifier: .automobile),
                 .credentials: DirectionsCredentials(
                     accessToken: Bundle.main.object(forInfoDictionaryKey: "MGLMapboxAccessToken") as? String,
                     host: URL(string: "https://api.mapbox.com")!
@@ -289,12 +356,10 @@ class MapboxNavigationView: UIView {
             return
         }
         
-        let coordinates = [
-            CLLocationCoordinate2D.init(latitude: 0, longitude: 0),
-            CLLocationCoordinate2D.init(latitude: 0, longitude: 0)
-        ]
-        
-        let routeOptions = NavigationRouteOptions(coordinates: coordinates, profileIdentifier: .automobile)
+        let waypointOptions = getWaypointOptions()
+        let routeOptions = NavigationRouteOptions(waypoints: waypointOptions, profileIdentifier: .automobile)
+        routeOptions.allowsUTurnAtWaypoint = true
+
         let navigationService = MapboxNavigationService(route: mappedRoute, routeIndex: 0, routeOptions: routeOptions, simulating: shouldSimulateRoute ? .always : .never)
         navigationService.router.reroutesProactively = false
         navigationService.router.refreshesRoute = false
